@@ -5,10 +5,6 @@ date: "April 28, 2016"
 output: pdf_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ##Pre-planting soil samples
 The following analysis is for the DNA extracted from soil samples collected prior to planting. There are 96 sampling points, with 3 DNA extraction replicates and 2 technical replicates per extraction replicate, totaling 6 replicates per sampling point.
 
