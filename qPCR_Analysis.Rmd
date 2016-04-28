@@ -2,7 +2,9 @@
 title: "qPCR Analysis"
 author: "Mitch Roth"
 date: "April 28, 2016"
-output: html_document
+output: 
+  html_document: 
+    keep_md: yes
 ---
 
 ##Pre-planting soil samples
