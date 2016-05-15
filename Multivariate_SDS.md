@@ -67,6 +67,207 @@ nrow(var)
 
     ## [1] 96
 
+Principle Coordinates analysis
+------------------------------
+
+``` r
+library(ape)
+```
+
+    ## Warning: package 'ape' was built under R version 3.2.3
+
+``` r
+library(ecodist)
+pre.plantvar <- grep("Pre", names(var))
+pre.plant <- var[,pre.plantvar]
+#pre.plant <- cbind(pre.plant, pam.clust.R5$V5)
+pre.plant.pca <- pre.plant[,c(-1,-2)]
+n = nrow(pre.plant.pca)
+p = ncol(pre.plant.pca)
+rank.pre = min(n,p)
+
+# apply PCA - scale. = TRUE is highly 
+# advisable, but default is FALSE. 
+vir.pca <- prcomp(scale(pre.plant.pca, center = TRUE, scale = TRUE)) 
+vir.pca$sdev/sum(vir.pca$sdev)
+```
+
+    ## [1] 0.2681314 0.2278065 0.2091860 0.1578858 0.1369903
+
+``` r
+loadings <- vir.pca$rotation
+loadings
+```
+
+    ##                    PC1        PC2          PC3         PC4        PC5
+    ## PreSCN.juvs -0.4931155  0.4787834  0.006469029 -0.69405373  0.2141286
+    ## Pre.qPCR    -0.3686071  0.6367306 -0.076818160  0.66009037 -0.1307008
+    ## Pre.spiral  -0.5454191 -0.4522658  0.132854154  0.27325987  0.6369085
+    ## Pre.lesion  -0.5624276 -0.4007209 -0.228777168 -0.08886468 -0.6803396
+    ## Pre.dagger  -0.0846109  0.0147977  0.961284507 -0.00149502 -0.2618242
+
+``` r
+scores <- as.data.frame(vir.pca$x)
+summary(vir.pca)
+```
+
+    ## Importance of components:
+    ##                           PC1    PC2    PC3    PC4     PC5
+    ## Standard deviation     1.3045 1.1083 1.0177 0.7681 0.66647
+    ## Proportion of Variance 0.3403 0.2457 0.2072 0.1180 0.08884
+    ## Cumulative Proportion  0.3403 0.5860 0.7932 0.9112 1.00000
+
+``` r
+delta = function(D) {
+  DD=as.matrix(D)
+  n=nrow(DD)
+  d=matrix(0,n,n)
+  A=-0.5*(DD^2)
+  Arm = rowMeans(A)
+  Acm = colMeans(A)
+  Agm = mean(A)
+  
+  for (i in 1:n) {
+    for (j in 1:n) {
+      d[i,j] = A[i,j] - Arm[i] - Acm[j] + Agm
+    }}
+  return(d)
+}
+
+library(vegan)
+```
+
+    ## Warning: package 'vegan' was built under R version 3.2.3
+
+    ## Loading required package: permute
+
+    ## Warning: package 'permute' was built under R version 3.2.3
+
+    ## Loading required package: lattice
+
+    ## This is vegan 2.3-3
+
+    ## 
+    ## Attaching package: 'vegan'
+
+    ## The following object is masked from 'package:ecodist':
+    ## 
+    ##     mantel
+
+``` r
+pre.bray <- vegdist(pre.plant.pca, method = "bray")
+e.bray <- eigen(delta(pre.bray))
+barplot(e.bray$values[1:rank.pre])
+```
+
+![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-1.png)<!-- -->
+
+``` r
+#Now calculate the eigenvectors of the delta matrix
+pre.cmd <- cmdscale(pre.bray, k = rank.pre, eig = TRUE)
+
+prop.pre <- as.matrix((pre.cmd$eig/sum(pre.cmd$eig))*100)
+prop.pre[1:rank.pre]
+```
+
+    ## [1] 70.943047 16.267962  7.660185  5.518836  3.505549
+
+``` r
+barplot(pre.cmd$eig[1:rank.pre], main="",
+   xlab="Dimensions", ylab = "Eigenvalues")
+lines(pre.cmd$values)
+abline(h = mean(pre.cmd$eig[1:rank.pre]), col = "red", lty = 2)
+```
+
+![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-2.png)<!-- -->
+
+``` r
+pre.pco <- as.data.frame(pre.cmd$points)
+pre.pco$section <- vir$section
+biplot(pcoa(pre.bray))
+```
+
+![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-3.png)<!-- -->
+
+``` r
+library(ggplot2)
+plot3 <- ggplot(pre.pco, aes(x = V1, y = V2, color = section)) + 
+  geom_vline(xintercept = 0) +
+  geom_hline(yintercept = 0) +
+  geom_point(size = 5) +
+  xlab("Axis1 (71%)") +
+  ylab("Axis2 (16%)") + 
+  theme_bw() 
+  #theme(axis.text.x = element_text(size = 10, face = "bold"),
+   #     axis.text.y = element_text(size = 10, face = "bold"),
+    #    axis.title.x = element_text(size = 20, face = "bold"),
+     #   axis.title.y = element_text(size = 20, face = "bold"),
+      #  legend.title = element_text(size  = 0, face = "bold"),
+       # legend.text = element_text(size  = 20, face = "bold.italic"))
+plot.1 <- as.data.frame(cbind(pre.plant.pca$PreSCN.juvs, pre.pco$V1))
+plot1 <- ggplot(plot.1, aes(x = V1, y = V2, color = var$R5.DX )) + 
+  geom_point(size = 3) + 
+  stat_smooth(color = "black", se = FALSE) + 
+  scale_colour_gradient(name = "Disease\nIndex R5", low="forestgreen", high = "red") + 
+  xlab("Pre soil SCN juviniles") +
+  ylab("PcoA1 (71%)") +
+  theme_bw()
+plot.2 <- as.data.frame(cbind(pre.plant.pca$Pre.qPCR, pre.pco$V1, pre.pco$V2))
+plot2 <- ggplot(plot.2, aes(x = V1, y = V2, color = var$R5.DX )) + 
+  geom_point(size = 3) + 
+  scale_colour_gradient(name = "Disease\nIndex R5", low="forestgreen", high = "red") + 
+  stat_smooth(color = "black", se = FALSE) + 
+  xlab("Pre soil qPCR") +
+  ylab("PcoA1 (71%)") +
+  theme_bw()
+
+library(gridExtra)
+grid.arrange(plot3, arrangeGrob(plot2, plot1, ncol = 2))
+```
+
+![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-4.png)<!-- -->
+
+``` r
+pre.qpcr1 <- cor(pre.plant.pca$Pre.qPCR, pre.pco$V1)
+pre.juv1 <- cor(pre.plant.pca$PreSCN.juvs, pre.pco$V1)
+pre.spiral1 <- cor(pre.plant.pca$Pre.spiral, pre.pco$V1)
+pre.lesion1 <-  cor(pre.plant.pca$Pre.lesion, pre.pco$V1)
+pre.dagger1 <-  cor(pre.plant.pca$Pre.dagger, pre.pco$V1)
+pre.qpcr2 <- cor(pre.plant.pca$Pre.qPCR, pre.pco$V2)
+pre.juv2 <- cor(pre.plant.pca$PreSCN.juvs, pre.pco$V2)
+pre.spiral2 <- cor(pre.plant.pca$Pre.spiral, pre.pco$V2)
+pre.lesion2 <-  cor(pre.plant.pca$Pre.lesion, pre.pco$V2)
+pre.dagger2 <- cor(pre.plant.pca$Pre.dagger, pre.pco$V2)
+pre.qpcr3 <- cor(pre.plant.pca$Pre.qPCR, pre.pco$V3)
+pre.juv3 <- cor(pre.plant.pca$PreSCN.juvs, pre.pco$V3)
+pre.spiral3 <- cor(pre.plant.pca$Pre.spiral, pre.pco$V3)
+pre.lesion3 <-  cor(pre.plant.pca$Pre.lesion, pre.pco$V3)
+pre.dagger3 <- cor(pre.plant.pca$Pre.dagger, pre.pco$V3)
+
+data.frame1 <- data.frame(c(pre.qpcr1, pre.juv1, pre.spiral1, pre.lesion1, pre.dagger1))
+data.frame2 <- data.frame(c(pre.qpcr2, pre.juv2, pre.spiral2, pre.lesion2, pre.dagger2))
+data.frame3 <- data.frame(c(pre.qpcr3, pre.juv3, pre.spiral3, pre.lesion3, pre.dagger3))
+
+corelations <- cbind.data.frame(data.frame1, data.frame2, data.frame3)
+colnames(corelations) <- c("Dim1", "Dim2", "Dim3")
+rownames(corelations) <- c("qPCR", "SCN", "Spiral", "Lesion", "Dagger")
+library(knitr)
+```
+
+    ## Warning: package 'knitr' was built under R version 3.2.3
+
+``` r
+kable(corelations)
+```
+
+|        |       Dim1|        Dim2|        Dim3|
+|--------|----------:|-----------:|-----------:|
+| qPCR   |  0.8380665|  -0.5205832|   0.0056947|
+| SCN    |  0.7879208|   0.5327588|  -0.0356407|
+| Spiral |  0.1946473|   0.1918144|   0.1052310|
+| Lesion |  0.2393085|   0.2311228|   0.0356229|
+| Dagger |  0.0674872|   0.0835663|   0.0181472|
+
 ### Canonical correlation analysis
 
 ``` r
@@ -85,6 +286,16 @@ pre <- pre.plant[,-c(1,2)]
 
 #install.packages("yacca")
 library(yacca)
+```
+
+    ## 
+    ## Attaching package: 'yacca'
+
+    ## The following object is masked from 'package:vegan':
+    ## 
+    ##     cca
+
+``` r
 cca <- cca(pre, disease)
 cca$chisq
 ```
@@ -222,12 +433,10 @@ p2 <- ggplot(cca.bar[cca.bar$Dim == "Dim2",], aes(x = Var, y = -CV)) +
 library(Rmisc)
 ```
 
-    ## Loading required package: lattice
-
     ## Loading required package: plyr
 
 ``` r
 multiplot(p1, p3, p2, p4, cols = 2)
 ```
 
-![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-3-1.png)<!-- -->
+![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-4-1.png)<!-- -->
