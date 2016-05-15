@@ -72,11 +72,6 @@ Principle Coordinates analysis
 
 ``` r
 library(ape)
-```
-
-    ## Warning: package 'ape' was built under R version 3.2.3
-
-``` r
 library(ecodist)
 pre.plantvar <- grep("Pre", names(var))
 pre.plant <- var[,pre.plantvar]
@@ -86,38 +81,6 @@ n = nrow(pre.plant.pca)
 p = ncol(pre.plant.pca)
 rank.pre = min(n,p)
 
-# apply PCA - scale. = TRUE is highly 
-# advisable, but default is FALSE. 
-vir.pca <- prcomp(scale(pre.plant.pca, center = TRUE, scale = TRUE)) 
-vir.pca$sdev/sum(vir.pca$sdev)
-```
-
-    ## [1] 0.2681314 0.2278065 0.2091860 0.1578858 0.1369903
-
-``` r
-loadings <- vir.pca$rotation
-loadings
-```
-
-    ##                    PC1        PC2          PC3         PC4        PC5
-    ## PreSCN.juvs -0.4931155  0.4787834  0.006469029 -0.69405373  0.2141286
-    ## Pre.qPCR    -0.3686071  0.6367306 -0.076818160  0.66009037 -0.1307008
-    ## Pre.spiral  -0.5454191 -0.4522658  0.132854154  0.27325987  0.6369085
-    ## Pre.lesion  -0.5624276 -0.4007209 -0.228777168 -0.08886468 -0.6803396
-    ## Pre.dagger  -0.0846109  0.0147977  0.961284507 -0.00149502 -0.2618242
-
-``` r
-scores <- as.data.frame(vir.pca$x)
-summary(vir.pca)
-```
-
-    ## Importance of components:
-    ##                           PC1    PC2    PC3    PC4     PC5
-    ## Standard deviation     1.3045 1.1083 1.0177 0.7681 0.66647
-    ## Proportion of Variance 0.3403 0.2457 0.2072 0.1180 0.08884
-    ## Cumulative Proportion  0.3403 0.5860 0.7932 0.9112 1.00000
-
-``` r
 delta = function(D) {
   DD=as.matrix(D)
   n=nrow(DD)
@@ -135,37 +98,11 @@ delta = function(D) {
 }
 
 library(vegan)
-```
-
-    ## Warning: package 'vegan' was built under R version 3.2.3
-
-    ## Loading required package: permute
-
-    ## Warning: package 'permute' was built under R version 3.2.3
-
-    ## Loading required package: lattice
-
-    ## This is vegan 2.3-3
-
-    ## 
-    ## Attaching package: 'vegan'
-
-    ## The following object is masked from 'package:ecodist':
-    ## 
-    ##     mantel
-
-``` r
 pre.bray <- vegdist(pre.plant.pca, method = "bray")
 e.bray <- eigen(delta(pre.bray))
-barplot(e.bray$values[1:rank.pre])
-```
 
-![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-1.png)<!-- -->
-
-``` r
 #Now calculate the eigenvectors of the delta matrix
 pre.cmd <- cmdscale(pre.bray, k = rank.pre, eig = TRUE)
-
 prop.pre <- as.matrix((pre.cmd$eig/sum(pre.cmd$eig))*100)
 prop.pre[1:rank.pre]
 ```
@@ -179,17 +116,12 @@ lines(pre.cmd$values)
 abline(h = mean(pre.cmd$eig[1:rank.pre]), col = "red", lty = 2)
 ```
 
-![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-2.png)<!-- -->
+![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-1.png)<!-- -->
 
 ``` r
 pre.pco <- as.data.frame(pre.cmd$points)
 pre.pco$section <- vir$section
-biplot(pcoa(pre.bray))
-```
 
-![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-3.png)<!-- -->
-
-``` r
 library(ggplot2)
 plot3 <- ggplot(pre.pco, aes(x = V1, y = V2, color = section)) + 
   geom_vline(xintercept = 0) +
@@ -225,7 +157,7 @@ library(gridExtra)
 grid.arrange(plot3, arrangeGrob(plot2, plot1, ncol = 2))
 ```
 
-![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-4.png)<!-- -->
+![](Multivariate_SDS_files/figure-markdown_github/unnamed-chunk-2-2.png)<!-- -->
 
 ``` r
 pre.qpcr1 <- cor(pre.plant.pca$Pre.qPCR, pre.pco$V1)
@@ -252,11 +184,6 @@ corelations <- cbind.data.frame(data.frame1, data.frame2, data.frame3)
 colnames(corelations) <- c("Dim1", "Dim2", "Dim3")
 rownames(corelations) <- c("qPCR", "SCN", "Spiral", "Lesion", "Dagger")
 library(knitr)
-```
-
-    ## Warning: package 'knitr' was built under R version 3.2.3
-
-``` r
 kable(corelations)
 ```
 
@@ -286,16 +213,6 @@ pre <- pre.plant[,-c(1,2)]
 
 #install.packages("yacca")
 library(yacca)
-```
-
-    ## 
-    ## Attaching package: 'yacca'
-
-    ## The following object is masked from 'package:vegan':
-    ## 
-    ##     cca
-
-``` r
 cca <- cca(pre, disease)
 cca$chisq
 ```
@@ -431,11 +348,6 @@ p2 <- ggplot(cca.bar[cca.bar$Dim == "Dim2",], aes(x = Var, y = -CV)) +
   coord_flip() +
   theme_bw()
 library(Rmisc)
-```
-
-    ## Loading required package: plyr
-
-``` r
 multiplot(p1, p3, p2, p4, cols = 2)
 ```
 
