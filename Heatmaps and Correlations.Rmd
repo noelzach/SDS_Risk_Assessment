@@ -130,16 +130,16 @@ heatmap.t2 <- function(var){
 }
 heatmap.t(R6.DX.2015)
 title("R6 In-field Disease Index", cex.main = 1.5)
-heatmap.t(R5.DW.2015)
-title("R5 Root Dry Weight", cex.main = 1.5)
+#heatmap.t(R5.DW.2015)
+#title("R5 Root Dry Weight", cex.main = 1.5)
 heatmap.t(Pre.qPCR.2015)
 title("2015 Pre-planting soil Fv quantities", cex.main = 1.5)
-heatmap.t2(R5.DX.2014)
-title("2014 R5 disease index", cex.main = 1.5)
-heatmap.t(R5.DW.2014)
-title("2014 R5 root dry weight", cex.main = 1.5)
-heatmap.t(Pre.qPCR.2014)
-title("2014 Pre-planting soil Fv quantities", cex.main = 1.5)
+#heatmap.t2(R5.DX.2014)
+#title("2014 R5 disease index", cex.main = 1.5)
+#heatmap.t(R5.DW.2014)
+#title("2014 R5 root dry weight", cex.main = 1.5)
+#heatmap.t(Pre.qPCR.2014)
+#title("2014 Pre-planting soil Fv quantities", cex.main = 1.5)
 heatmap.t(PhiNPQ.2015)
 title("R1 ΦNPQ Measurements", cex.main = 1.5)
 
@@ -163,7 +163,7 @@ fields.krig <- function(var){
           legend.width = 3, legend.lab = "")
 }
 fields.krig(geo.list.2015$R6.DX)
-fields.krig(geo.list.2015$R5.DW)
+#fields.krig(geo.list.2015$R5.DW)
 fields.krig(geo.list.2015$Pre.qPCR)
 fields.krig(geo.list.2015$R1.PhiNPQ)
 ```
