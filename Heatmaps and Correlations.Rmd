@@ -39,7 +39,7 @@ geo.list.2014b <- NULL
 row.z <- 0
 row.zz <- 0
 row.zzz <- 0
-z <- c(5:47)
+z <- c(5:47) #These are different now because of added nematode columns
 zz <- c(5:24)
 zzz <- c(25:34)
 for (i in z){
