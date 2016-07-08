@@ -70,9 +70,6 @@ pre.pco$Section <- vir$Section
 pre.pco$R5.DX <- vir$R5.DX
 
 library(ggplot2)
-#####################################################################
-#   Plot3 doesn't work, doesn't recognize "section"
-#####################################################################
 plot3 <- ggplot(pre.pco, aes(x = V1, y = V2, color = R5.DX)) + 
   geom_vline(xintercept = 0) +
   geom_hline(yintercept = 0) +
