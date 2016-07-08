@@ -1,0 +1,320 @@
+---
+title: "Heat maps and Correlations"
+author: "Mitch Roth"
+date: "March 22, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Figures for PPRA Paper
+
+Generate Figure 1 to show the following:
+  Pre.qPCR heatmap and krig to show heterogeneity of Fv in soil
+  Some variable heatmap and krig to show opposite trend (neg correlation)
+  R5.DX heatmap and krig to show what we are correlating to
+***Note, at this point, this is 2015 data only (3/22/16)
+
+```{r Organize Data}
+library(fields)
+library(geoR)
+ppra.2015 <- read.csv("2015_master.csv")
+ppra.2014 <- read.csv("2014_master.csv")
+#Variables I'll need for heatmaps
+R6.DX.2015 <- matrix(ppra.2015$R6.DX, ncol = 6, nrow = 16)
+R5.DW.2015 <- matrix(ppra.2015$R5.DW, ncol = 6, nrow = 16)
+Pre.qPCR.2015 <- matrix(ppra.2015$Pre.qPCR, ncol = 6, nrow = 16)
+R5.DX.2014 <- matrix(ppra.2014$R5.DX[97:120], ncol = 3, nrow = 8)
+R5.DW.2014 <- matrix(ppra.2014$R5.DW[1:96], ncol = 6, nrow = 16)
+Pre.qPCR.2014 <- matrix(ppra.2014$Pre.qPCR[1:96], ncol = 6, nrow = 16)
+PhiNPQ.2015 <- matrix(ppra.2015$R1.PhiNPQ, ncol = 6, nrow = 16)
+
+#Variables I'll need or geodata and kriging
+# Make all of my variables class geodata (leave out border for now)
+geo.list.2015 <- NULL
+geo.list.2014a <- NULL
+geo.list.2014b <- NULL
+row.z <- 0
+row.zz <- 0
+row.zzz <- 0
+z <- c(5:47) #These are different now because of added nematode columns
+zz <- c(5:24)
+zzz <- c(25:34)
+for (i in z){
+  row.z <- row.z + 1
+  geo.list.2015[[row.z]] <- as.geodata(ppra.2015, data.col = i)
+}
+for (i in zz){
+  row.zz <- row.zz + 1
+  geo.list.2014a[[row.zz]] <- as.geodata(ppra.2014[1:96,], data.col = i)
+}
+for (i in zzz){
+  row.zzz <- row.zzz + 1
+  geo.list.2014b[[row.zzz]] <- as.geodata(ppra.2014[97:120,], data.col = i)
+}
+names(geo.list.2015) <- colnames(ppra.2015[5:47])
+names(geo.list.2014a) <- colnames(ppra.2014[5:24])
+names(geo.list.2014b) <- colnames(ppra.2014[25:34])
+#Now, all variables can be read as geodata from geo.list$variable
+```
+
+```{r Generate Figure 1}
+par(mfrow=c(2,3))
+# Heatmap function, transposes the data first for formatting sake
+heatmap.t <- function(var){
+  Pass <- 1:9
+  Range <- 1:9
+  Passlab <- c("15", "16", "17")
+  Rangelab <- c("21", "22", "23", "24", "25", "26", "27", "28")
+  par(mar=c(5.1, 4.1, 2.1, 5.5))
+  plot(Pass,Range, xaxt = "n", yaxt="n", xaxs = "i", pch=NA, title(""),
+       cex.lab = 1.5)
+  axis(side=2, at=seq(1.25,9,1.075), labels = Rangelab)
+  axis(side=1, at=seq(2.25,9,2.75), labels = Passlab)
+  y <- c(1.45, 3.25, 4.10, 5.92, 6.77, 8.55)
+  for (i in seq_along(y)){
+    tvar <- t(var)
+    tvarcol <- matrix(tvar[i,], nrow = 1, ncol = 16)
+    add.image(y[i], 5, tvarcol, 
+              zlim=c(min(tvar), max(tvar)), axes=FALSE,
+              image.width = 1, image.height = 0.1, 
+              col = rev(rainbow(100, start = 1, end = 0.35)))
+#    text(y[i], y = (at = seq(0.95,9,0.535)), 
+#          labels = format(round((tvar[i,]), 2), nsmall = 2))
+  }
+  abline(v=c((11/3), (19/3)))
+  abline(a=1.75, b=0)
+  abline(a=2.85, b=0)
+  abline(a=3.91, b=0)
+  abline(a=5.01, b=0)
+  abline(a=6.10, b=0)
+  abline(a=7.15, b=0)
+  abline(a=8.25, b=0)
+  image.plot(var, col = rev(rainbow(100, start = 1, end = 0.35)), 
+             legend.only = TRUE, zlim=c(min(var), max(var)),
+             axes=FALSE, smallplot = c(.85,.9,0.2,0.92))
+}
+heatmap.t2 <- function(var){
+  Pass <- 1:9
+  Range <- 1:9
+  Passlab <- c("15", "16", "17")
+  Rangelab <- c("21", "22", "23", "24", "25", "26", "27", "28")
+  par(mar=c(5.1, 4.1, 2.1, 5.5))
+  plot(Pass,Range, xaxt = "n", yaxt="n", xaxs = "i", pch=NA, title(""))
+  axis(side=2, at=seq(1.25,9,1.075), labels = Rangelab)
+  axis(side=1, at=seq(2.25,9,2.75), labels = Passlab)
+  y <- c(2.325, 5.025, 7.7)
+  for (i in seq_along(y)){
+    tvar <- t(var)
+    tvarcol <- matrix(tvar[i,], nrow = 1, ncol = 8)
+    add.image(y[i], 5, tvarcol, 
+              zlim=c(min(tvar), max(tvar)), axes=FALSE,
+              image.width = 1, image.height = 0.45, 
+              col = rev(rainbow(100, start = 1, end = 0.35)))
+#    text(y[i], y = (at = seq(0.95,9,0.535)), 
+#          labels = format(round((tvar[i,]), 2), nsmall = 2))
+  }
+  abline(v=c((11/3), (19/3)))
+  abline(a=1.75, b=0)
+  abline(a=2.85, b=0)
+  abline(a=3.91, b=0)
+  abline(a=5.01, b=0)
+  abline(a=6.10, b=0)
+  abline(a=7.15, b=0)
+  abline(a=8.25, b=0)
+  image.plot(var, col = rev(rainbow(100, start = 1, end = 0.35)), 
+             legend.only = TRUE, zlim=c(min(var), max(var)),
+             axes=FALSE, smallplot = c(.85,.9,0.2,0.92))
+}
+heatmap.t(R6.DX.2015)
+title("R6 In-field Disease Index", cex.main = 1.5)
+#heatmap.t(R5.DW.2015)
+#title("R5 Root Dry Weight", cex.main = 1.5)
+heatmap.t(Pre.qPCR.2015)
+title("2015 Pre-planting soil Fv quantities", cex.main = 1.5)
+#heatmap.t2(R5.DX.2014)
+#title("2014 R5 disease index", cex.main = 1.5)
+#heatmap.t(R5.DW.2014)
+#title("2014 R5 root dry weight", cex.main = 1.5)
+#heatmap.t(Pre.qPCR.2014)
+#title("2014 Pre-planting soil Fv quantities", cex.main = 1.5)
+heatmap.t(PhiNPQ.2015)
+title("R1 ΦNPQ Measurements", cex.main = 1.5)
+
+
+#This code begins to create kriged heat maps using DEFAULT EVERYTHING
+#For a discussion / attempt at best model selection, see final chunk
+par(mfrow=c(2,3))
+fields.krig <- function(var){
+  xy <- as.data.frame(var$coords)
+  z <- as.data.frame(var$data)
+  # Now Krig the data using Krig
+  # Defaults to "stationary.cov" as covariance model 
+  var.krig <- Krig(xy, z)
+  # Now plot the Kriged data
+  surface(var.krig, 
+          type = "C", 
+          extrap = T,
+          col = rev(rainbow(100, start=1, end=0.35)),
+          xlab = "Distance (m)", ylab = "Distance (m)",
+          cex.lab = 1.8,
+          legend.width = 3, legend.lab = "")
+}
+fields.krig(geo.list.2015$R6.DX)
+#fields.krig(geo.list.2015$R5.DW)
+fields.krig(geo.list.2015$Pre.qPCR)
+fields.krig(geo.list.2015$R1.PhiNPQ)
+```
+
+```{r Figure 2, Correlations}
+library(corrplot)
+ordered.2015 <- cbind(ppra.2015$R4.DX, ppra.2015$R5.DX,
+                      ppra.2015$R6.DX, ppra.2015$V3.DW, ppra.2015$R5.DW,
+                      ppra.2015$V3.root, ppra.2015$V3.foliar,
+                      ppra.2015$R5.root, ppra.2015$R5.foliar,
+                      ppra.2015$PreSCN.total, ppra.2015$PostSCN.total,
+                      ppra.2015$Pre.qPCR, ppra.2015$V3.qPCR,
+                      ppra.2015$R5.qPCR, ppra.2015$Post.qPCR,
+                      ppra.2015$V3.Phi2, ppra.2015$V3.PhiNPQ,
+                      ppra.2015$V3.PhiNO, ppra.2015$V3.SPAD,
+                      ppra.2015$V3.NPQt, ppra.2015$V3.LEF, ppra.2015$V3.qL,
+                      ppra.2015$R1.Phi2, ppra.2015$R1.PhiNPQ,
+                      ppra.2015$R1.PhiNO, ppra.2015$R1.SPAD,
+                      ppra.2015$R1.NPQt, ppra.2015$R1.LEF, ppra.2015$R1.qL)
+as.matrix(ordered.2015)
+colnames(ordered.2015) <- c("R4.DX", "R5.DX", "R6.DX", "V3.DW", "R5.DW",
+                            "V3.root", "V3.foliar", "R5.root", "R5.foliar",
+                            "Pre.SCN", "Post.SCN", "Pre.qPCR", "V3.qPCR",
+                            "R5.qPCR", "Post.qPCR", "V3.Φ2", "V3.ΦNPQ",
+                            "V3.ΦNO", "V3.SPAD", "V3.NPQt", "V3.LEF",
+                            "V3.qL", "R1.Φ2", "R1.ΦNPQ", "R1.ΦNO",
+                            "R1.SPAD", "R1.NPQt", "R1.LEF", "R1.qL")
+class(ordered.2015)
+p.matrix <- function(mat) {
+    mat <- as.matrix(mat)
+    n <- ncol(mat)
+    p.mat<- matrix(NA, n, n)
+    diag(p.mat) <- 0
+    for (i in 1:(n - 1)) {
+        for (j in (i + 1):n) {
+            tmp <- cor.test(mat[, i], mat[, j])
+            p.mat[i, j] <- p.mat[j, i] <- tmp$p.value
+        }
+    }
+  colnames(p.mat) <- rownames(p.mat) <- colnames(mat)
+  p.mat
+}
+Photo.corr <- cor(ordered.2015, 
+                  use = "pairwise.complete.obs",
+                  method = "pearson")
+head(Photo.corr)
+Photo.p <- p.matrix(ordered.2015)
+par(mfrow=c(1,1))
+corrplot(Photo.corr, 
+         method = "color",
+         type = "upper", 
+         outline = TRUE,
+         mar = c(1, 0, 0, 0),
+         p.mat = Photo.p, 
+         sig.level = 0.05,
+         diag = FALSE,
+         addCoefasPercent = TRUE,
+         number.cex = 0.8,
+         order = "original",
+         insig = "blank",
+         tl.col="black", tl.srt=45,
+         addCoef.col = "white")
+```
+
+
+
+```{r For fun, North vs South and East vs West, eval=FALSE}
+# Exploring data - circle plots and histogram
+plot(geo.list.2015$Pre.qPCR, lowess = T)
+
+# Exploring data - West vs East (by pass)
+par(mar = c(5.1, 10.1, 4.1, 10.1))
+with(geo.list.2015$Pre.qPCR, plot(coords[,1], data, xlab = "Pass",
+                        ylab = "PreSoil Fv quantity", pch = 20, cex = 0.7))
+lines(lowess(geo.list.2015$Pre.qPCR$data ~
+               geo.list.2015$Pre.qPCR$coords[,1]))
+# Exploring data - South vs North (by range)
+with(geo.list.2015$Pre.qPCR, plot(coords[,2], data, xlab = "Range",
+                        ylab = "PreSoil Fv quantity", pch = 20, cex = 0.7))
+lines(lowess(geo.list.2015$Pre.qPCR$data ~
+               geo.list.2015$Pre.qPCR$coords[,2]))
+
+```
+
+
+```{r Best Model for Kriging Discussion}
+# Determine what model to use for kriging for these 3 variables
+# The code below will output model parameters, then -loglikelihood associated with each parameter
+# Determine best model by -loglikelihood (closest to zero) of lambda?
+# Then plot the krig product using the best model
+best.model <- function(var){
+  xy <- as.matrix(var$coords)
+  z <- as.matrix(var$data)
+
+  default.model <- spatialProcess(xy, z,
+                                cov.args = list(Covariance = "Matern",
+                                                smoothness = 1))
+  def <- rbind(default.model$pars, default.model$logLikelihood)
+  print(def)
+  # default model above is identical to default.model below
+  # default.model <- spatialProcess(xy, z,
+  #                                 cov.function = "stationary.cov")
+  exp.model <- spatialProcess(xy, z, 
+                              cov.args = list(Covariance = "Exponential"))
+  exp <- rbind(exp.model$pars, exp.model$logLikelihood)
+  print(exp)
+  # exp.model above is identical to exp.model below
+  # exp.model <- spatialProcess(xy, z, 
+  #                            cov.args = list(Covariance = "Matern",
+  #                                            smoothness = 0.5))
+  wend.model <- spatialProcess(xy, z,
+                               cov.args = list(Covariance = "Wendland",
+                                               dimension = 2,
+                                               k = 2))
+  wend <- rbind(wend.model$pars, wend.model$logLikelihood)
+  print(wend)
+}
+best.model(geo.list.2015$R5.DW)
+best.model(geo.list.2015$R5.DX)
+best.model(geo.list.2015$Pre.qPCR)
+
+#Results show that perhaps Wendland model is the best?
+
+
+#Here's another way to assess "best models"
+# For Pre.qPCR, best kriging model = 
+      # Max Liklihood estimates of Gaussian model 
+      # I'm using var(variable) for my estimate of sigma
+      # Don't know what to use for estimate of phi or kappa
+      # Not even sure kappa is an estimate here...
+best.model <- function(var){
+  sigma.est <- var(var$data)
+  stationary.model <- likfit(var, 
+                             ini = c(sigma.est, 2), 
+                             cov.model = "matern",
+                             kappa = 1.5)
+  nonconstant.model <- likfit(var, 
+                              trend = "1st", 
+                              ini = c(sigma.est, 2), 
+                              cov.model = "matern", 
+                              kappa = 1.5)
+  nonconstant.model2 <- likfit(var, 
+                              trend = "2nd", 
+                              ini = c(sigma.est, 2), 
+                              cov.model = "matern", 
+                              kappa = 1.5)
+  AIC(stationary.model, nonconstant.model, nonconstant.model2)
+}
+# LOWEST AIC IS BEST MODEL
+best.model(geo.list.2015$R5.DX)
+best.model(geo.list.2015$R5.DW)
+best.model(geo.list.2015$Pre.qPCR)
+# 2015 best models are all nonconstant.model2
+```
